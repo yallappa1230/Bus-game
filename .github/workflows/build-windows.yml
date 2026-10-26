@@ -1,0 +1,63 @@
+
+name: Build Indian Bus Simulator for GameHub
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "main.py"
+      - "requirements.txt"
+      - ".github/workflows/build-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Check Python syntax
+        run: python -m py_compile main.py
+
+      - name: Build Windows executable
+        run: |
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --windowed `
+            --name IndianBusSimulator `
+            --collect-all panda3d `
+            --collect-all direct `
+            main.py
+
+      - name: Package game
+        run: |
+          Compress-Archive `
+            -Path dist/IndianBusSimulator `
+            -DestinationPath IndianBusSimulator-Windows.zip
+
+      - name: Upload game artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IndianBusSimulator-Windows
+          path: IndianBusSimulator-Windows.zip
+          if-no-files-found: error
+          retention-days: 7
+          
